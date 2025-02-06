@@ -1,10 +1,23 @@
-name: CI
+name: Example Workflow
 
-on:
-  push:
-    branches:
-      - main
-  workflow_dispatch:
+on: [push, pull_request]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v2
+    - name: Build and Test
+      run: |
+        echo "Running build and tests..."
+        # Add your build and test commands here
+
+    - name: Upload Artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: build-artifact
+        path: path/to/artifact
 
 jobs:
   build:
