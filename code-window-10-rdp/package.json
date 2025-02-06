@@ -1,0 +1,32 @@
+{
+  "name": "code-window-10-rdp",
+  "version": "1.0.0",
+  "description": "A project for setting up a remote desktop protocol functionality in a code window environment.",
+  "main": "src/main.ts",
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/main.js"
+  },
+  "dependencies": {
+    "express": "^4.17.1",
+    "node-fetch": "^2.6.1"
+  },
+  "devDependencies": {
+    "typescript": "^4.5.4",
+    "@types/node": "^16.11.7",
+    "@types/express": "^4.17.13"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/microsoft/vscode-remote-try-dotnet.git"
+  },
+  "keywords": [
+    "RDP",
+    "remote",
+    "desktop",
+    "protocol",
+    "typescript"
+  ],
+  "author": "Your Name",
+  "license": "MIT"
+}
