@@ -1,54 +1,56 @@
-name: Generate RDP File
+name: CI
 
 on:
   push:
     branches:
       - main
+  workflow_dispatch:
 
 jobs:
-  generate-rdp:
+  build:
     runs-on: windows-latest
 
     steps:
-    - name: Checkout repository
-      uses: actions/checkout@v2
+    - name: Checkout code
+      uses: actions/checkout@v3
 
-    - name: Generate RDP File
-      run: |
-        $RdpFileContent = @"
-        screen mode id:i:2
-        desktopwidth:i:1920
-        desktopheight:i:1080
-        session bpp:i:32
-        winposstr:s:0,3,0,0,800,600
-        full address:s:127.0.0.1
-        compression:i:1
-        keyboardhook:i:2
-        audiomode:i:0
-        redirectprinters:i:1
-        redirectcomports:i:0
-        redirectsmartcards:i:1
-        redirectclipboard:i:1
-        redirectposdevices:i:0
-        autoreconnection enabled:i:1
-        username:s:Administrator
-        domain:s:
-        alternate shell:s:
-        shell working directory:s:
-        password 51:b:0000000000000000000000000000000000000000000000000000000000000000
-        disable wallpaper:i:0
-        disable full window drag:i:1
-        disable menu anims:i:1
-        disable themes:i:0
-        bitmapcachepersistenable:i:1
-        "@
-
-        $RdpFilePath = "$env:GITHUB_WORKSPACE\remote-desktop.rdp"
-        Set-Content -Path $RdpFilePath -Value $RdpFileContent
-      shell: pwsh
-
-    - name: Upload RDP File
-      uses: actions/upload-artifact@v4
+    - name: Set up .NET
+      uses: actions/setup-dotnet@v3
       with:
-        name: remote-desktop
-        path: ${{ github.workspace }}/remote-desktop.rdp
+        dotnet-version: '6.0.x'
+
+    - name: Install dependencies
+      run: dotnet restore
+
+    - name: Build
+      run: dotnet build --configuration Release --no-restore
+
+    - name: Test
+      run: dotnet test --no-restore --verbosity normal
+
+    - name: Download ngrok
+      run: Invoke-WebRequest -Uri https://bin.equinox.io/c/bNyj1mQVY4c/ngrok-v3-stable-windows-amd64.zip -OutFile ngrok.zip
+
+    - name: Extract ngrok
+      run: Expand-Archive -Path ngrok.zip -DestinationPath ngrok
+
+    - name: Authenticate ngrok
+      run: .\ngrok\ngrok.exe authtoken $Env:NGROK_AUTH_TOKEN
+      env:
+        2sXEjjaDPFuI9xLzMmYkz18YrxS_37otnTB16e2ybqPceAreZ: ${{ secrets.NGROK_AUTH_TOKEN }}
+
+    - name: Enable Remote Desktop
+      run: |
+        Set-ItemProperty -Path "HKLM:\System\CurrentControlSet\Control\Terminal Server" -Name "fDenyTSConnections" -Value 0
+        Enable-NetFirewallRule -DisplayGroup "Remote Desktop"
+        Set-LocalUser -Name "runneradmin" -Password (ConvertTo-SecureString -AsPlainText -Force "YourPasswordHere")
+
+    - name: Create ngrok Tunnel
+      run: .\ngrok\ngrok.exe tcp 3389
+
+    - name: Upload ngrok logs
+      if: failure()
+      uses: actions/upload-artifact@v3
+      with:
+        name: ngrok-logs
+        path: ngrok.log
